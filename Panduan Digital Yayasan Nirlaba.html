@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panduan & Dashboard Transformasi Digital Yayasan Nirlaba</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 380px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 340px;
+            }
+        }
+        .tab-btn.active {
+            border-bottom: 3px solid #2563eb;
+            color: #2563eb;
+            font-weight: 700;
+            background-color: #eff6ff;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-500 selection:text-white">
+
+    <!-- Chosen Palette: Warm Professional Neutral (Slate background with Indigo/Blue accents, Emerald success highlights, and Soft Amber warnings) -->
+    <!-- Application Structure Plan: 
+        A single-page interactive dashboard designed for non-profit foundation founders and managers. 
+        Structure consists of:
+        1. Top Bar & Hero Section: Executive introduction, quick stats, and navigation tabs.
+        2. Navigational Tabs: 
+           - Pilar & Overview: Interactive breakdown of the 6 core non-profit technology pillars.
+           - Ekosistem Hibah TechSoup: Interactive software comparison & savings simulator chart.
+           - Donasi & Akuntansi ISAK 35: MDR 0% savings calculator, ISAK 35 asset net visualizer, comparison matrix.
+           - Lapangan & Relawan: Interactive process flow for offline field data collection (KoboToolbox) and volunteer acquisition (Indorelawan).
+           - Keamanan & UU PDP: Interactive PDP compliance checklist and security architecture.
+           - Kalkulator Kesiapan: Self-assessment calculator for foundation digital maturity and implementation roadmap.
+        3. Dynamic Content Panels: Managed through pure Vanilla JS state switching without page reloads.
+        Why this structure: Non-profit leadership requires both high-level decision frameworks and immediate practical toolboxes (calculators, checklists, grant lists). Non-linear tabbed navigation empowers users to explore specific operational domains based on urgent organizational needs.
+    -->
+    <!-- Visualization & Content Choices: 
+        1. Grant Savings Chart -> Goal: Compare commercial costs vs non-profit grants -> Chart.js Bar Chart -> User hovers to see annual savings per software -> Clear ROI demonstration without SVG/Mermaid.
+        2. Asset Net Breakdown Chart -> Goal: Explain ISAK 35 Restricted vs Unrestricted funds -> Chart.js Doughnut Chart -> Interactive toggle for donation types -> Clarifies accounting compliance.
+        3. MDR 0% Savings Calculator -> Goal: Demonstrate financial efficiency -> Dynamic JS Input Sliders -> Shows real rupiah saved through non-profit QRIS rates.
+        4. Interactive Process & PDP Checklist -> Goal: Guide compliance and operational flow -> Custom HTML/CSS styled cards with JS state management -> High engagement without heavy external libraries.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Header Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
+                        Y
+                    </div>
+                    <div>
+                        <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">Yayasan Digital Hub</h1>
+                        <p class="text-xs text-slate-500">Transformasi & Akuntabilitas Entitas Nirlaba</p>
+                    </div>
+                </div>
+                <div class="hidden lg:flex items-center space-x-2 text-xs font-semibold text-slate-600">
+                    <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">✓ Standard ISAK 35</span>
+                    <span class="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full">✓ TechSoup Eligible</span>
+                    <span class="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full">✓ Kepatuhan UU PDP</span>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-1 overflow-x-auto custom-scrollbar border-t border-slate-100 py-1" id="navTabs">
+                <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active px-4 py-2 text-xs sm:text-sm font-medium rounded-lg whitespace-nowrap transition-colors">
+                    🏛️ 6 Pilar Operasional
+                </button>
+                <button onclick="switchTab('grants')" id="tab-grants" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg whitespace-nowrap transition-colors">
+                    🎁 Hibah TechSoup & Software
+                </button>
+                <button onclick="switchTab('finance')" id="tab-finance" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg whitespace-nowrap transition-colors">
+                    💰 Donasi & Akuntansi ISAK 35
+                </button>
+                <button onclick="switchTab('field')" id="tab-field" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg whitespace-nowrap transition-colors">
+                    📋 Lapangan & Relawan
+                </button>
+                <button onclick="switchTab('security')" id="tab-security" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg whitespace-nowrap transition-colors">
+                    🔒 Keamanan & UU PDP
+                </button>
+                <button onclick="switchTab('readiness')" id="tab-readiness" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg whitespace-nowrap transition-colors">
+                    ⚡ Kalkulator & Roadmap
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- TAB 1: OVERVIEW & 6 PILARS -->
+        <section id="content-overview" class="tab-content block space-y-6">
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="relative z-10 max-w-3xl">
+                    <span class="inline-block px-3 py-1 bg-blue-500/30 text-blue-200 border border-blue-400/30 rounded-full text-xs font-semibold mb-3">
+                        Panduan Eksekutif Yayasan Baru
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">
+                        Membangun Yayasan Nirlaba Modern, Akuntabel, dan Efisien Secara Biaya
+                    </h2>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6">
+                        Pengelolaan yayasan sosial kemanusiaan baru tidak memerlukan investasi modal besar. Dengan memanfaatkan hibah perangkat lunak global, skema MDR 0% QRIS, pencatatan berbasis ISAK 35, dan pengumpulan data berbasis aplikasi kemanusiaan, yayasan dapat mencapai taraf akuntabilitas tinggi sejak hari pertama.
+                    </p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10 text-center">
+                            <div class="text-xl sm:text-2xl font-bold text-emerald-400">100%</div>
+                            <div class="text-[11px] text-slate-300">Hibah Cloud Legal</div>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10 text-center">
+                            <div class="text-xl sm:text-2xl font-bold text-blue-400">0%</div>
+                            <div class="text-[11px] text-slate-300">MDR QRIS Nirlaba</div>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10 text-center">
+                            <div class="text-xl sm:text-2xl font-bold text-amber-400">ISAK 35</div>
+                            <div class="text-[11px] text-slate-300">Standar Akuntansi</div>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md p-3 rounded-xl border border-white/10 text-center">
+                            <div class="text-xl sm:text-2xl font-bold text-indigo-300">Offline</div>
+                            <div class="text-[11px] text-slate-300">Survei Lapangan GIS</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Introduction -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-base font-bold text-slate-900 mb-1">Struktur Arsitektur Teknologi Nirlaba</h3>
+                <p class="text-xs text-slate-600">
+                    Transformasi digital yayasan dibagi menjadi 6 pilar fungsional. Klik pada masing-masing pilar di bawah untuk mengeplorasi teknologi kunci, rasionalitas penggunaannya, dan tingkat prioritas implementasinya untuk yayasan yang baru berdiri.
+                </p>
+            </div>
+
+            <!-- 6 Pillars Interactive Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Pillar 1 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer border-t-4 border-t-blue-600" onclick="switchTab('grants')">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-2xl">☁️</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">Pilar 1</span>
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-sm mb-2">Produktivitas & Kolaborasi</h4>
+                    <p class="text-xs text-slate-600 mb-4">Infrastruktur cloud gratis untuk email domain yayasan, dokumen program, dan manajemen tugas relawan.</p>
+                    <div class="flex flex-wrap gap-1">
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Google Workspace</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">MS 365</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Trello/Notion</span>
+                    </div>
+                </div>
+
+                <!-- Pillar 2 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer border-t-4 border-t-emerald-600" onclick="switchTab('finance')">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-2xl">💳</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full">Pilar 2</span>
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-sm mb-2">Fundraising & Payment Gateway</h4>
+                    <p class="text-xs text-slate-600 mb-4">Kemudahan penerimaan donasi multi-kanal via QRIS MDR 0%, Virtual Account, dan Crowdfunding.</p>
+                    <div class="flex flex-wrap gap-1">
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Midtrans/Xendit</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">QRIS 0%</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Kitabisa</span>
+                    </div>
+                </div>
+
+                <!-- Pillar 3 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer border-t-4 border-t-indigo-600" onclick="switchTab('finance')">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-2xl">📊</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">Pilar 3</span>
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-sm mb-2">Akuntansi Kepatuhan ISAK 35</h4>
+                    <p class="text-xs text-slate-600 mb-4">Pencatatan standar pelaporan akuntansi nirlaba dengan pemisahan Aset Neto Terikat & Tidak Terikat.</p>
+                    <div class="flex flex-wrap gap-1">
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">ISAK 35</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Wave / Jurnal</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Aset Neto</span>
+                    </div>
+                </div>
+
+                <!-- Pillar 4 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer border-t-4 border-t-amber-500" onclick="switchTab('field')">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-2xl">📱</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">Pilar 4</span>
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-sm mb-2">Operasional Lapangan & Relawan</h4>
+                    <p class="text-xs text-slate-600 mb-4">Pengumpulan data penerima manfaat offline berbasis PBB dan platform akuisisi relawan gratis.</p>
+                    <div class="flex flex-wrap gap-1">
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">KoboToolbox</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Indorelawan</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Survei GIS</span>
+                    </div>
+                </div>
+
+                <!-- Pillar 5 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer border-t-4 border-t-purple-600" onclick="switchTab('grants')">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-2xl">💌</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">Pilar 5</span>
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-sm mb-2">CRM & Messaging Donatur</h4>
+                    <p class="text-xs text-slate-600 mb-4">Pengelolaan retensi donatur, tanda terima donasi otomatis, dan laporan dampak via WA API.</p>
+                    <div class="flex flex-wrap gap-1">
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Salesforce NPSP</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">WA API</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">HubSpot</span>
+                    </div>
+                </div>
+
+                <!-- Pillar 6 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer border-t-4 border-t-rose-600" onclick="switchTab('security')">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-2xl">🛡️</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-rose-100 text-rose-700 rounded-full">Pilar 6</span>
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-sm mb-2">Keamanan Data & UU PDP</h4>
+                    <p class="text-xs text-slate-600 mb-4">Perlindungan data pribadi donatur/penerima manfaat sesuai UU No. 27/2022 & transparansi publik.</p>
+                    <div class="flex flex-wrap gap-1">
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">UU PDP 2022</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Bitwarden / 2FA</span>
+                        <span class="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">Looker Studio</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: TECHSOUP & SOFTWARE GRANTS -->
+        <section id="content-grants" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-lg font-bold text-slate-900 mb-1">Verifikasi TechSoup & Ekosistem Hibah Perangkat Lunak</h3>
+                <p class="text-xs text-slate-600">
+                    TechSoup Indonesia (techsoup.or.id) adalah validator resmi untuk memverifikasi legalitas nirlaba Indonesia. Dengan terverifikasi di TechSoup, yayasan berhak mendapatkan hibah lisensi perangkat lunak kelas dunia secara 100% gratis atau potongan harga hingga 90%.
+                </p>
+            </div>
+
+            <!-- Chart & Filter Area -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Visual Savings Chart -->
+                <div class="lg:col-span-6 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-bold text-slate-900 text-sm">Estimasi Nilai Hibah vs Harga Komersial /Tahun</h4>
+                            <span class="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Hemat Jutaan/Tahun</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4">Grafik membandingkan estimasi biaya komersial 10 pengguna vs nilai hibah yang didapat yayasan secara gratis dari vendor global.</p>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="grantsChart"></canvas>
+                    </div>
+                    <p class="text-[11px] text-slate-400 italic text-center mt-2">*Nilai estimasi dalam Jutaan Rupiah (IDR) per 10 pengguna per tahun.</p>
+                </div>
+
+                <!-- Software Directory & Filter -->
+                <div class="lg:col-span-6 bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <h4 class="font-bold text-slate-900 text-sm">Katalog Software Hibah Nirlaba</h4>
+                        <!-- Category Filter -->
+                        <select id="grantCategoryFilter" onchange="filterGrants()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-blue-500 bg-slate-50">
+                            <option value="all">Semua Kategori</option>
+                            <option value="productivity">Produktivitas & Cloud</option>
+                            <option value="crm">CRM & Donatur</option>
+                            <option value="design">Desain & Operasional</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-3 max-h-[360px] overflow-y-auto custom-scrollbar pr-1" id="grantsList">
+                        <!-- Items rendered dynamically via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TechSoup Step-by-Step Registration -->
+            <div class="bg-blue-50 border border-blue-200 p-5 rounded-xl">
+                <h4 class="font-bold text-blue-900 text-sm mb-3">4 Langkah Registrasi Legalitas di TechSoup Indonesia:</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div class="bg-white p-3 rounded-lg border border-blue-100 text-xs">
+                        <div class="font-bold text-blue-700 mb-1">1. Siapkan Dokumen</div>
+                        <p class="text-slate-600">Akta Pendirian, SK Kemenkumham, NPWP Yayasan, & Surat Izin Operasional Operasional Sosial.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-blue-100 text-xs">
+                        <div class="font-bold text-blue-700 mb-1">2. Buat Akun Organisasi</div>
+                        <p class="text-slate-600">Kunjungi techsoup.or.id dan daftarkan profil yayasan menggunakan email domain resmi.</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-blue-100 text-xs">
+                        <div class="font-bold text-blue-700 mb-1">3. Proses Verifikasi</div>
+                        <p class="text-slate-600">Tim TechSoup mengevaluasi status keabsahan hukum entitas nirlaba (biasanya 3-7 hari kerja).</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-blue-100 text-xs">
+                        <div class="font-bold text-blue-700 mb-1">4. Token Validasi</div>
+                        <p class="text-slate-600">Dapatkan "Validation Token" untuk klaim hibah Google Workspace, MS 365, Canva, & Salesforce.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: FUNDRAISING & ISAK 35 -->
+        <section id="content-finance" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-lg font-bold text-slate-900 mb-1">Digital Fundraising & Kepatuhan Pelaporan Keuangan (ISAK 35)</h3>
+                <p class="text-xs text-slate-600">
+                    Otomatisasi penggalangan dana wajib diimbangi dengan akuntabilitas keuangan. Berdasarkan rujukan **ISAK 35** (menggantikan PSAK 45 per 2020), pelaporan keuangan nirlaba berfokus pada pertanggungjawaban **Aset Neto**, bukan imbal hasil pemegang saham.
+                </p>
+            </div>
+
+            <!-- Interactive Calculators & Visual Matrix -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- QRIS 0% Calculator -->
+                <div class="lg:col-span-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-slate-900 text-sm">Kalkulator Hemat MDR QRIS Nirlaba</h4>
+                            <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">BI Policy: MDR 0%</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4">Sesuai kebijakan Bank Indonesia, transaksi donasi sosial nirlaba dikenakan MDR 0% (dibanding komersial 0.3% - 0.7%). Hitung penghematan dana donasi Anda.</p>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs font-medium mb-1">
+                                    <span>Target Donasi QRIS Bulanan:</span>
+                                    <span id="donationValLabel" class="font-bold text-blue-600">Rp 50.000.000</span>
+                                </div>
+                                <input type="range" id="donationRange" min="5000000" max="500000000" step="5000000" value="50000000" oninput="updateQrisCalc()" class="w-full accent-blue-600 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                        <div class="flex justify-between text-xs text-slate-600">
+                            <span>Potongan QRIS Komersial (0.7%):</span>
+                            <span id="commercialFee" class="font-semibold text-rose-600">Rp 350.000 /bln</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-slate-600">
+                            <span>Potongan QRIS Nirlaba (0%):</span>
+                            <span class="font-semibold text-emerald-600">Rp 0 /bln</span>
+                        </div>
+                        <div class="border-t border-slate-200 pt-2 flex justify-between text-sm font-bold text-slate-900">
+                            <span>Dana Diselamatkan /Tahun:</span>
+                            <span id="savedAnnual" class="text-emerald-600">Rp 4.200.000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ISAK 35 Net Asset Visualizer -->
+                <div class="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-sm mb-1">Struktur Aset Neto Sesuai ISAK 35</h4>
+                        <p class="text-xs text-slate-500 mb-3">ISAK 35 mewajibkan pemisahan kas/aset neto menjadi dua kategori utama agar pengelola tidak melanggar amanah donatur.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <div class="chart-container">
+                            <canvas id="isakChart"></canvas>
+                        </div>
+                        <div class="space-y-3 text-xs">
+                            <div class="p-2.5 rounded-lg border border-blue-200 bg-blue-50/50">
+                                <div class="font-bold text-blue-900 flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span>
+                                    Aset Neto Tanpa Pembatasan
+                                </div>
+                                <p class="text-slate-600 text-[11px] mt-1">Dana operasional umum, infak terikat umum, atau hasil penggalangan bebas yang dapat dialokasikan langsung sesuai kebijakan internal yayasan.</p>
+                            </div>
+                            <div class="p-2.5 rounded-lg border border-amber-200 bg-amber-50/50">
+                                <div class="font-bold text-amber-900 flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                                    Aset Neto Dengan Pembatasan
+                                </div>
+                                <p class="text-slate-600 text-[11px] mt-1">Dana terikat amanah (misal: bantuan bencana spesifik, zakat, beasiswa). Tidak boleh dipakai untuk biaya sewa kantor/gaji operasional umum.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Matrix: ISAK 35 vs Commercial Accounting -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h4 class="font-bold text-slate-900 text-sm">Matriks Perbedaan Pelaporan Keuangan: Komersial vs Nirlaba (ISAK 35)</h4>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                <th class="p-3">Elemen Pelaporan</th>
+                                <th class="p-3">Entitas Komersial (Perusahaan)</th>
+                                <th class="p-3 text-blue-700 bg-blue-50/50">Entitas Nirlaba (Yayasan - ISAK 35)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr>
+                                <td class="p-3 font-semibold text-slate-800">Fokus Utama</td>
+                                <td class="p-3 text-slate-600">Profitabilitas & Imbal Hasil Investor</td>
+                                <td class="p-3 bg-blue-50/20 text-slate-800 font-medium">Akuntabilitas Penyaluran & Amanah Donatur</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold text-slate-800">Komponen Modal / Ekuitas</td>
+                                <td class="p-3 text-slate-600">Modal Saham & Laba Ditahan</td>
+                                <td class="p-3 bg-blue-50/20 text-slate-800 font-medium">Aset Neto (Tanpa Pembatasan & Dengan Pembatasan)</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold text-slate-800">Laporan Operasional</td>
+                                <td class="p-3 text-slate-600">Laporan Laba Rugi</td>
+                                <td class="p-3 bg-blue-50/20 text-slate-800 font-medium">Laporan Penghasilan Komprehensif</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold text-slate-800">Laporan Perubahan Modal</td>
+                                <td class="p-3 text-slate-600">Laporan Perubahan Ekuitas</td>
+                                <td class="p-3 bg-blue-50/20 text-slate-800 font-medium">Laporan Perubahan Aset Neto</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold text-slate-800">Rekomendasi Software</td>
+                                <td class="p-3 text-slate-600">Standard ERP / Accounting</td>
+                                <td class="p-3 bg-blue-50/20 text-slate-800 font-medium">Wave Accounting (Gratis) / Mekari Jurnal (Bagan Akun Terpisah)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: FIELD OPERATIONAL & VOLUNTEERS -->
+        <section id="content-field" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-lg font-bold text-slate-900 mb-1">Manajemen Relawan & Pengumpulan Data Lapangan</h3>
+                <p class="text-xs text-slate-600">
+                    Operasional kemanusiaan yang tepat sasaran membutuhkan validasi penerima manfaat berbasis data lapangan yang valid serta mobilisasi relawan yang terstruktur tanpa membebankan biaya publikasi iklan.
+                </p>
+            </div>
+
+            <!-- Two Pillar Comparison for Field & Volunteers -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- KoboToolbox Section -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="p-2 bg-amber-100 text-amber-700 rounded-lg text-lg">📱</span>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">KoboToolbox (Standar PBB)</h4>
+                            <p class="text-[11px] text-slate-500">Pendataan Penerima Manfaat Lapangan</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-600">
+                        Platform open-source gratis berstandar Perserikatan Bangsa-Bangsa (UN) yang memungkinkan relawan mengumpulkan data survei kelayakan penerima manfaat langsung dari HP Android/iOS.
+                    </p>
+                    <ul class="text-xs text-slate-600 space-y-1.5 pl-4 list-disc">
+                        <li><strong>Fitur Offline:</strong> Data tersimpan di HP walau tanpa sinyal internet di pelosok/lokasi bencana.</li>
+                        <li><strong>Geotagging GIS:</strong> Otomatis mengunci titik lokasi GPS penerima bantuan.</li>
+                        <li><strong>Foto Bukti Lapangan:</strong> Mengambil foto kondisi rumah/penerima manfaat langsung di formulir.</li>
+                        <li><strong>Sinkronisasi Otomatis:</strong> Data terunggah otomatis saat HP mendapatkan koneksi internet.</li>
+                    </ul>
+                </div>
+
+                <!-- Indorelawan Section -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="p-2 bg-blue-100 text-blue-700 rounded-lg text-lg">🤝</span>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Indorelawan.org Integration</h4>
+                            <p class="text-[11px] text-slate-500">Rekrutmen & Mobilisasi Relawan Gratis</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-600">
+                        Platform agregator terbesar di Indonesia untuk menghubungkan yayasan baru dengan ribuan relawan bertalenta tanpa biaya rekrutmen.
+                    </p>
+                    <ul class="text-xs text-slate-600 space-y-1.5 pl-4 list-disc">
+                        <li><strong>Multi-Keahlian:</strong> Rekrut tim medis, pengajar, fasilitator bencana, hingga desainer grafis.</li>
+                        <li><strong>Manajemen Proyek:</strong> Publikasi lowongan relawan berdasarkan durasi acara/program.</li>
+                        <li><strong>Verifikasi Rekam Izah:</strong> Sistem ulasan & riwayat partisipasi relawan yang transparan.</li>
+                        <li><strong>Otomatisasi Sertifikat:</strong> Memberikan apresiasi digital bagi relawan yang telah bertugas.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Flow Step UI: Field to Report Flow -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h4 class="font-bold text-slate-900 text-sm mb-3">Alur Kerja Data Lapangan Hingga Laporan Publik</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative text-xs">
+                        <div class="font-bold text-slate-800 mb-1">1. Rekrut Relawan</div>
+                        <p class="text-slate-600">Posting kebutuhan tim lapangan di Indorelawan.org & briefing SOP digital.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative text-xs">
+                        <div class="font-bold text-slate-800 mb-1">2. Survei Mobile</div>
+                        <p class="text-slate-600">Relawan mendata calon penerima manfaat via KoboToolbox (HP offline/online).</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative text-xs">
+                        <div class="font-bold text-slate-800 mb-1">3. Verifikasi Data</div>
+                        <p class="text-slate-600">Admin yayasan memvalidasi kelayakan penerima bantuan di dashboard central.</p>
+                    </div>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl relative text-xs">
+                        <div class="font-bold text-slate-800 mb-1">4. Distribusi & Laporan</div>
+                        <p class="text-slate-600">Bantuan disalurkan, data disinkronkan ke Looker Studio untuk laporan donatur.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: SECURITY & UU PDP -->
+        <section id="content-security" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-lg font-bold text-slate-900 mb-1">Keamanan Informasi & Kepatuhan UU Pelindungan Data Pribadi (UU PDP)</h3>
+                <p class="text-xs text-slate-600">
+                    Sesuai **UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi**, yayasan yang mengumpulkan data donatur, nomor rekening, serta data sensitif penerima manfaat bertindak sebagai **Pengendali Data Pribadi** dan wajib menerapkan standar perlindungan hukum.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- PDP Interactive Checklist -->
+                <div class="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-bold text-slate-900 text-sm">Checklist Kepatuhan UU PDP Yayasan</h4>
+                        <span id="pdpScoreBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">0/5 Terpenuhi</span>
+                    </div>
+
+                    <div class="space-y-2.5 text-xs" id="pdpChecklist">
+                        <label class="flex items-start space-x-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" onchange="updatePdpScore()" class="pdp-check mt-0.5 rounded text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="font-bold text-slate-800">Klausul Persetujuan (Explicit Consent)</span>
+                                <p class="text-slate-500 text-[11px]">Setiap formulir donasi & pendaftaran relawan memiliki checkbox Kebijakan Privasi yang menjelaskan tujuan penggunaan data.</p>
+                            </div>
+                        </label>
+
+                        <label class="flex items-start space-x-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" onchange="updatePdpScore()" class="pdp-check mt-0.5 rounded text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="font-bold text-slate-800">Pembatasan Akses Data Sensitif</span>
+                                <p class="text-slate-500 text-[11px]">Data nomor HP, KTP, dan rekening donatur hanya dapat diakses oleh staf berwenang (bukan seluruh relawan).</p>
+                            </div>
+                        </label>
+
+                        <label class="flex items-start space-x-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" onchange="updatePdpScore()" class="pdp-check mt-0.5 rounded text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="font-bold text-slate-800">Hak Pembaruan & Penghapusan Data</span>
+                                <p class="text-slate-500 text-[11px]">Menyediakan saluran bagi donatur/subjek data untuk meminta pembaruan atau penghapusan data pribadi mereka.</p>
+                            </div>
+                        </label>
+
+                        <label class="flex items-start space-x-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" onchange="updatePdpScore()" class="pdp-check mt-0.5 rounded text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="font-bold text-slate-800">Enkripsi Brankas Kata Sandi (Bitwarden)</span>
+                                <p class="text-slate-500 text-[11px]">Tidak ada kata sandi akun yayasan yang dicatat di kertas/chat. Seluruh kredensial dikelola via Password Manager.</p>
+                            </div>
+                        </label>
+
+                        <label class="flex items-start space-x-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <input type="checkbox" onchange="updatePdpScore()" class="pdp-check mt-0.5 rounded text-blue-600 focus:ring-blue-500">
+                            <div>
+                                <span class="font-bold text-slate-800">Wajib Otentikasi Dua Faktor (2FA)</span>
+                                <p class="text-slate-500 text-[11px]">Mengaktifkan 2FA (Google/Microsoft Authenticator) pada seluruh email resmi, website admin, dan payment gateway.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Transparency & Public Reporting Section -->
+                <div class="lg:col-span-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-sm mb-2">Transparansi Publik via Google Looker Studio</h4>
+                        <p class="text-xs text-slate-600 mb-3">
+                            Membangun kepercayaan donatur publik dengan menyajikan Dashboard Transparansi Keuangan & Penyaluran Program secara real-time yang dapat disematkan di website resmi yayasan.
+                        </p>
+                        
+                        <div class="p-4 bg-slate-900 text-white rounded-xl space-y-2 border border-slate-800">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-400">Live Dashboard Preview</span>
+                                <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-bold">● Updated Today</span>
+                            </div>
+                            <div class="border-t border-slate-800 pt-2 grid grid-cols-2 gap-2 text-center">
+                                <div class="p-2 bg-slate-800/50 rounded-lg">
+                                    <div class="text-[10px] text-slate-400">Total Donasi Masuk</div>
+                                    <div class="text-xs font-bold text-emerald-400">Rp 142.500.000</div>
+                                </div>
+                                <div class="p-2 bg-slate-800/50 rounded-lg">
+                                    <div class="text-[10px] text-slate-400">Penerima Manfaat</div>
+                                    <div class="text-xs font-bold text-blue-400">1.250 Jiwa</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+                        <strong>💡 Tips Keamanan Yayasan:</strong> Jangan pernah mempublikasikan dokumen KTP atau nomor rekening pribadi pengurus di media sosial. Gunakan nama rekening resmi atas nama Yayasan.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 6: READINESS CALCULATOR & ROADMAP -->
+        <section id="content-readiness" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-lg font-bold text-slate-900 mb-1">Kalkulator Kesiapan Digital & Tahapan Pentahapan Implementasi</h3>
+                <p class="text-xs text-slate-600">
+                    Gunakan kalkulator mandiri ini untuk mengukur kesiapan ekosistem digital yayasan Anda dan dapatkan rekomendasi langkah selanjutnya sesuai roadmap pentahapan 3 fase.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Self Assessment Form -->
+                <div class="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <h4 class="font-bold text-slate-900 text-sm">Evaluasi Kesiapan Digital Organisasi</h4>
+                    
+                    <div class="space-y-3 text-xs" id="readinessForm">
+                        <div>
+                            <label class="font-semibold text-slate-800 block mb-1">1. Berkas Legalitas Yayasan (Akta, Kemenkumham, NPWP):</label>
+                            <select id="q1" onchange="calculateReadiness()" class="w-full border border-slate-300 rounded-lg p-2 bg-slate-50">
+                                <option value="0">Belum Lengkap / Dalam Proses</option>
+                                <option value="25">Lengkap & Siap Didaftarkan ke TechSoup</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="font-semibold text-slate-800 block mb-1">2. Domain Email Resmi & Ruang Kerja Cloud:</label>
+                            <select id="q2" onchange="calculateReadiness()" class="w-full border border-slate-300 rounded-lg p-2 bg-slate-50">
+                                <option value="0">Masih Menggunakan Gmail/Yahoo Pribadi</option>
+                                <option value="25">Sudah Memiliki Domain @yayasan.org / Google Workspace</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="font-semibold text-slate-800 block mb-1">3. Kanal Donasi & Rekening Atas Nama Yayasan:</label>
+                            <select id="q3" onchange="calculateReadiness()" class="w-full border border-slate-300 rounded-lg p-2 bg-slate-50">
+                                <option value="0">Masih Pakai Rekening Pribadi Pengurus</option>
+                                <option value="25">Rekening Atas Nama Yayasan + Payment Gateway / QRIS Nirlaba</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="font-semibold text-slate-800 block mb-1">4. Pencatatan Keuangan Terpisah (ISAK 35):</label>
+                            <select id="q4" onchange="calculateReadiness()" class="w-full border border-slate-300 rounded-lg p-2 bg-slate-50">
+                                <option value="0">Pencatatan Manual Campur Aduk</option>
+                                <option value="25">Sudah Memisahkan Kas Terikat vs Tidak Terikat / Software Akuntansi</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Readiness Result Box -->
+                <div class="lg:col-span-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-sm mb-2">Skor Kesiapan Digital</h4>
+                        <div class="text-center py-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <div id="readinessScore" class="text-4xl font-extrabold text-blue-600">0%</div>
+                            <div id="readinessStatus" class="text-xs font-semibold text-slate-600 mt-1">Tahap Awal (Perlu Fondasi Legalitas)</div>
+                        </div>
+                    </div>
+
+                    <div id="readinessAdvice" class="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 space-y-1">
+                        <strong>Langkah Pertama Anda:</strong> Segera siapkan Akta Pendirian dan SK Kemenkumham untuk didaftarkan ke TechSoup Indonesia agar mendapatkan Google Workspace Gratis.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Roadmap Stepper -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h4 class="font-bold text-slate-900 text-sm">Roadmap Implementation Flow untuk Yayasan Baru</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Phase 1 -->
+                    <div class="p-4 rounded-xl border-l-4 border-l-blue-600 bg-slate-50 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-xs text-blue-600 uppercase">Fase 1 (Bulan 1)</span>
+                            <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold">Fondasi & Legal</span>
+                        </div>
+                        <h5 class="font-bold text-slate-900 text-sm">Verifikasi & Identitas Digital</h5>
+                        <ul class="text-xs text-slate-600 space-y-1 list-disc pl-4">
+                            <li>Daftar TechSoup Indonesia</li>
+                            <li>Klaim Google Workspace for Nonprofits</li>
+                            <li>Beli Domain Resmi (.org / .or.id)</li>
+                            <li>Setup Bitwarden Password Manager</li>
+                        </ul>
+                    </div>
+
+                    <!-- Phase 2 -->
+                    <div class="p-4 rounded-xl border-l-4 border-l-emerald-600 bg-slate-50 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-xs text-emerald-600 uppercase">Fase 2 (Bulan 2)</span>
+                            <span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold">Fundraising</span>
+                        </div>
+                        <h5 class="font-bold text-slate-900 text-sm">Situs Web Donasi & QRIS</h5>
+                        <ul class="text-xs text-slate-600 space-y-1 list-disc pl-4">
+                            <li>Buat Website Profile + Payment Gateway</li>
+                            <li>Pengajuan QRIS MDR 0% ke Bank/Midtrans</li>
+                            <li>Buka Akun Campaign Kitabisa.com</li>
+                            <li>Integrasi WhatsApp Business API</li>
+                        </ul>
+                    </div>
+
+                    <!-- Phase 3 -->
+                    <div class="p-4 rounded-xl border-l-4 border-l-amber-500 bg-slate-50 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-xs text-amber-600 uppercase">Fase 3 (Bulan 3)</span>
+                            <span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold">Operasional</span>
+                        </div>
+                        <h5 class="font-bold text-slate-900 text-sm">Akuntabilitas & Lapangan</h5>
+                        <ul class="text-xs text-slate-600 space-y-1 list-disc pl-4">
+                            <li>Setup Software Akuntansi (ISAK 35)</li>
+                            <li>Integrasi KoboToolbox untuk Lapangan</li>
+                            <li>Publikasi Kebutuhan Relawan di Indorelawan</li>
+                            <li>Embed Dashboard Looker Studio</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4">
+            <p class="font-semibold text-slate-700">Panduan Strategi Digital Yayasan Nirlaba Indonesia</p>
+            <p class="mt-1">Dirancang untuk efisiensi operasional, akuntabilitas ISAK 35, dan kepatuhan Undang-Undang Pelindungan Data Pribadi.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Data Store for Grants Catalog
+        const grantsData = [
+            { name: "Google Workspace for Nonprofits", cat: "productivity", type: "100% Gratis", desc: "Email domain resmi, Drive 30GB/user, Google Meet, Docs, Sheets.", val: 14.4 },
+            { name: "Microsoft 365 Nirlaba", cat: "productivity", type: "Gratis / Diskon 80%", desc: "MS Teams, SharePoint, Word, Excel, PowerPoint cloud.", val: 12.0 },
+            { name: "Canva for Nonprofits", cat: "design", type: "100% Gratis Premium", desc: "Desain grafis premium gratis untuk poster donasi, laporan dampak, & konten IG.", val: 3.2 },
+            { name: "Salesforce Nonprofit Cloud", cat: "crm", type: "10 Lisensi Gratis", desc: "CRM komprehensif pelacakan donatur, retensi, dan manajemen komitmen.", val: 36.0 },
+            { name: "KoboToolbox (UN Standard)", cat: "design", type: "100% Gratis", desc: "Pengumpulan data lapangan offline berbasis HP Android/iOS dengan GPS.", val: 8.5 },
+            { name: "Bitwarden Password Manager", cat: "productivity", type: "Gratis / Minimal", desc: "Penyimpanan enkripsi kata sandi akun resmi yayasan secara terpusat.", val: 1.8 }
+        ];
+
+        // Global Chart Instances
+        let grantsChartInstance = null;
+        let isakChartInstance = null;
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // Remove active style from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Show current tab content & active button
+            const targetContent = document.getElementById('content-' + tabId);
+            const targetBtn = document.getElementById('tab-' + tabId);
+            
+            if (targetContent) targetContent.classList.remove('hidden');
+            if (targetBtn) targetBtn.classList.add('active');
+
+            // Trigger chart redraws if tab contains charts
+            if (tabId === 'grants' && grantsChartInstance) {
+                setTimeout(() => grantsChartInstance.resize(), 50);
+            }
+            if (tabId === 'finance' && isakChartInstance) {
+                setTimeout(() => isakChartInstance.resize(), 50);
+            }
+        }
+
+        // Render Grants List & Filters
+        function filterGrants() {
+            const filterVal = document.getElementById('grantCategoryFilter').value;
+            const container = document.getElementById('grantsList');
+            container.innerHTML = '';
+
+            const filtered = filterVal === 'all' ? grantsData : grantsData.filter(g => g.cat === filterVal);
+
+            filtered.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'p-3 rounded-lg border border-slate-200 bg-slate-50/50 hover:bg-slate-100 transition-colors flex justify-between items-start gap-3';
+                div.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-bold text-slate-900 text-xs">${item.name}</span>
+                            <span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold">${item.type}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600">${item.desc}</p>
+                    </div>
+                    <div class="text-right whitespace-nowrap">
+                        <span class="text-[10px] text-slate-400 block">Nilai Komersial</span>
+                        <span class="text-xs font-bold text-blue-600">~Rp ${item.val} Jt/thn</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Initialize Grants Bar Chart
+        function initGrantsChart() {
+            const ctx = document.getElementById('grantsChart').getContext('2d');
+            grantsChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Google Workspace', 'Microsoft 365', 'Salesforce CRM', 'Canva Premium', 'KoboToolbox'],
+                    datasets: [
+                        {
+                            label: 'Harga Komersial (Rp Jt/Thn)',
+                            data: [14.4, 12.0, 36.0, 3.2, 8.5],
+                            backgroundColor: '#94a3b8',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Biaya Yayasan Nirlaba (Rp)',
+                            data: [0, 0, 0, 0, 0],
+                            backgroundColor: '#10b981',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw + ' Jt IDR';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Nilai (Juta Rupiah)', font: { size: 10 } }
+                        },
+                        x: {
+                            ticks: {
+                                callback: function(val, index) {
+                                    let label = this.getLabelForValue(index);
+                                    return label.length > 12 ? label.substring(0, 10) + '..' : label;
+                                },
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize ISAK 35 Doughnut Chart
+        function initIsakChart() {
+            const ctx = document.getElementById('isakChart').getContext('2d');
+            isakChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aset Neto Tanpa Pembatasan (Operasional/Bebas)', 'Aset Neto Dengan Pembatasan (Program/Terikat)'],
+                    datasets: [{
+                        data: [40, 60],
+                        backgroundColor: ['#2563eb', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        // QRIS MDR 0% Calculator Function
+        function updateQrisCalc() {
+            const amount = parseInt(document.getElementById('donationRange').value);
+            document.getElementById('donationValLabel').innerText = 'Rp ' + amount.toLocaleString('id-ID');
+
+            const commercialFeeMonthly = Math.round(amount * 0.007); // 0.7% standard MDR
+            const annualSavings = commercialFeeMonthly * 12;
+
+            document.getElementById('commercialFee').innerText = 'Rp ' + commercialFeeMonthly.toLocaleString('id-ID') + ' /bln';
+            document.getElementById('savedAnnual').innerText = 'Rp ' + annualSavings.toLocaleString('id-ID');
+        }
+
+        // PDP Score Calculator
+        function updatePdpScore() {
+            const checkboxes = document.querySelectorAll('.pdp-check');
+            let checkedCount = 0;
+            checkboxes.forEach(cb => { if (cb.checked) checkedCount++; });
+
+            const badge = document.getElementById('pdpScoreBadge');
+            badge.innerText = `${checkedCount}/5 Terpenuhi`;
+
+            if (checkedCount === 5) {
+                badge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700';
+            } else if (checkedCount >= 3) {
+                badge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700';
+            } else {
+                badge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700';
+            }
+        }
+
+        // Readiness Assessment Calculator
+        function calculateReadiness() {
+            const q1 = parseInt(document.getElementById('q1').value);
+            const q2 = parseInt(document.getElementById('q2').value);
+            const q3 = parseInt(document.getElementById('q3').value);
+            const q4 = parseInt(document.getElementById('q4').value);
+
+            const total = q1 + q2 + q3 + q4;
+            const scoreEl = document.getElementById('readinessScore');
+            const statusEl = document.getElementById('readinessStatus');
+            const adviceEl = document.getElementById('readinessAdvice');
+
+            scoreEl.innerText = total + '%';
+
+            if (total === 100) {
+                scoreEl.className = 'text-4xl font-extrabold text-emerald-600';
+                statusEl.innerText = 'Matang (Siap Skala Operasional Penuh)';
+                adviceEl.className = 'p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-1';
+                adviceEl.innerHTML = '<strong>Luar Biasa!</strong> Yayasan Anda memiliki fondasi digital & kepatuhan keuangan yang lengkap. Fokus pada otomatisasi CRM & laporan transparansi publik.';
+            } else if (total >= 50) {
+                scoreEl.className = 'text-4xl font-extrabold text-blue-600';
+                statusEl.innerText = 'Berkembang (Fondasi Dasar Terbentuk)';
+                adviceEl.className = 'p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 space-y-1';
+                adviceEl.innerHTML = '<strong>Kemajuan Bagus!</strong> Lengkapi integrasi payment gateway QRIS 0% dan rapikan Bagan Akun akuntansi sesuai ISAK 35.';
+            } else {
+                scoreEl.className = 'text-4xl font-extrabold text-amber-600';
+                statusEl.innerText = 'Tahap Awal (Perlu Legalitas & Cloud)';
+                adviceEl.className = 'p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1';
+                adviceEl.innerHTML = '<strong>Langkah Pertama:</strong> Segera siapkan Akta Pendirian & SK Kemenkumham untuk didaftarkan ke TechSoup Indonesia agar mendapat Google Workspace Gratis.';
+            }
+        }
+
+        // Page Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            filterGrants();
+            initGrantsChart();
+            initIsakChart();
+            updateQrisCalc();
+            calculateReadiness();
+        });
+    </script>
+</body>
+</html>
